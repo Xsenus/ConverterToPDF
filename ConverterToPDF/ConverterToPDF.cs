@@ -633,7 +633,7 @@ namespace ConverterToPDF
             var document = new Document();
             try
             {
-                using (var ms = new StreamReader(txtPath, Encoding.Unicode))
+                using (var ms = new StreamReader(txtPath))
                 {
                     var fs = new FileStream(pdfPath, FileMode.Create);
                     BaseFont baseFont = BaseFont.CreateFont("arial.ttf", BaseFont.IDENTITY_H, BaseFont.NOT_EMBEDDED);
