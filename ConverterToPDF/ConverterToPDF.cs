@@ -158,7 +158,38 @@ namespace ConverterToPDF
             Properties.Settings.Default.Save();
 
 
-            if (checkDirectory.Checked == true)
+            if (checkNoDirectoryProcessing.Checked == true)
+            {
+                try
+                {
+                    await StartAsync(Properties.Settings.Default.StartPath, Properties.Settings.Default.EndPath).ConfigureAwait(false);
+                }
+                catch (Exception) { }
+
+                var allCatalogs = Directory.GetDirectories(Properties.Settings.Default.StartPath, "*", SearchOption.AllDirectories);
+                var topCatalog = Directory.GetDirectories(Properties.Settings.Default.StartPath, "*", SearchOption.TopDirectoryOnly).First();
+
+                allCatalogs = allCatalogs.Where(w => w != topCatalog).ToArray();
+
+                foreach (var item in allCatalogs)
+                {
+                    var lastFolder = item.Replace(Properties.Settings.Default.StartPath, "");
+                    var newEndPath = $"{Properties.Settings.Default.EndPath}\\{lastFolder}";
+
+                    if (!Directory.Exists(newEndPath))
+                    {
+                        Directory.CreateDirectory(newEndPath);
+                        Message($"Создан каталог: {newEndPath}.");
+                    }
+
+                    try
+                    {
+                        await StartAsync(item, newEndPath).ConfigureAwait(false);
+                    }
+                    catch (Exception) { }
+                }              
+            } 
+            else if (checkDirectory.Checked == true)
             {
                 try
                 {
@@ -166,7 +197,7 @@ namespace ConverterToPDF
                 }
                 catch (Exception) { }
             }
-            else
+            else if (checkDirectory.Checked == false)
             {
                 var catalog = Directory.GetDirectories(Properties.Settings.Default.StartPath);
 
@@ -732,6 +763,26 @@ namespace ConverterToPDF
         private void txtEndPath_TextChanged(object sender, EventArgs e)
         {
             Properties.Settings.Default.EndPath = txtEndPath.Text;
+        }
+
+        private void checkDirectory_CheckedChanged(object sender, EventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+
+            if (checkBox.Checked)
+            {
+                checkNoDirectoryProcessing.Checked = false;
+            }
+        }
+
+        private void checkNoDirectoryProcessing_CheckedChanged(object sender, EventArgs e)
+        {
+            var checkBox = sender as CheckBox;
+
+            if (checkBox.Checked)
+            {
+                checkDirectory.Checked = false;
+            }
         }
     }
 }
