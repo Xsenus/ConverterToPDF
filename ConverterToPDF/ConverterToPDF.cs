@@ -168,7 +168,7 @@ namespace ConverterToPDF
                 catch (Exception) { }
 
                 var allCatalogs = Directory.GetDirectories(Properties.Settings.Default.StartPath, "*", SearchOption.AllDirectories);
-                var topCatalog = Directory.GetDirectories(Properties.Settings.Default.StartPath, "*", SearchOption.TopDirectoryOnly).First();
+                var topCatalog = Directory.GetDirectories(Properties.Settings.Default.StartPath, "*", SearchOption.TopDirectoryOnly).FirstOrDefault();
 
                 allCatalogs = allCatalogs.Where(w => w != topCatalog).ToArray();
 
