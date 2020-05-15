@@ -6,6 +6,7 @@ using SharpCompress.Common;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -359,11 +360,14 @@ namespace ConverterToPDF
                 else if (workFile.ExpansionFile.Contains("jpg") ||
                     workFile.ExpansionFile.Contains("gif") ||
                     workFile.ExpansionFile.Contains("bmp") ||
-                    workFile.ExpansionFile.Contains("tif") ||
                     workFile.ExpansionFile.Contains("jpeg") || 
                     workFile.ExpansionFile.Contains("png"))
                 {
                     ImagesToPdf(workFile.PathFile, workFile.FilePathForPDF);
+                }
+                else if ((workFile.ExpansionFile.Contains("tif") || workFile.ExpansionFile.Contains("tiff")))
+                {
+                    ImagesTIFFToPdf(workFile.PathFile, workFile.FilePathForPDF);
                 }
                 else if (workFile.ExpansionFile.Contains("txt"))
                 {
@@ -647,7 +651,66 @@ namespace ConverterToPDF
                 }
                 Message($"Конвертация успешно завершена.");
             }
-            catch (Exception)
+            catch (Exception ex)
+            {
+                Message($"Ошибка конвертации изображения: {imagePath}");
+            }
+        }
+
+        private byte[] BitmapToBytes(Bitmap bmp)
+        {
+            byte[] data = new byte[0];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bmp.Save(ms, ImageFormat.Png);
+                ms.Seek(0, 0);
+                data = ms.ToArray();
+            }
+            return data;
+        }
+
+        /// <summary>
+        /// Конвертирование изображений TIF/TIFF в PDF.
+        /// </summary>
+        /// <param name="imagePath">Путь до файла изображения.</param>
+        /// <param name="pdfPath">Путь к файлу PDF.</param>
+        public void ImagesTIFFToPdf(string imagePath, string pdfPath)
+        {
+            try
+            {
+                Message($"Конвертация изображения: {imagePath} в PDF.");
+                iTextSharp.text.Rectangle pageSize = null;
+
+                var srcImage = new Bitmap(imagePath);
+                int totalPages = srcImage.GetFrameCount(FrameDimension.Page);
+                pageSize = new iTextSharp.text.Rectangle(0, 0, srcImage.Width, srcImage.Height);
+
+                using (var fs = new FileStream(pdfPath, FileMode.Create))
+                {
+                    var document = new Document(pageSize, 0, 0, 0, 0);
+                    var writer = PdfWriter.GetInstance(document, fs);
+                    document.Open();
+
+                    var pdfContentByte = writer.DirectContent;
+
+                    for (int i = 0; i < totalPages; i++)
+                    {
+                        srcImage.SelectActiveFrame(FrameDimension.Page, i);
+
+                        var img = iTextSharp.text.Image.GetInstance(BitmapToBytes(srcImage));
+
+                        img.ScaleToFit(document.PageSize);
+                        //img.ScalePercent(72f / srcImage.HorizontalResolution * 100);
+                        img.SetAbsolutePosition(0, 0);
+                        pdfContentByte.AddImage(img);
+                        document.NewPage();
+                    }
+                    document.Close();
+                }
+
+                Message($"Конвертация TIF/TIFF успешно завершена.");
+            }
+            catch (Exception ex)
             {
                 Message($"Ошибка конвертации изображения: {imagePath}");
             }
